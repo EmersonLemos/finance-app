@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+
+<!-- TÍTULO -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">
+    <i class="fa-solid fa-chart-line me-1"></i> Dashboard
+  </h2>
+</div>
+
+<!-- RESUMO FINANCEIRO -->
+<div class="row g-3 mb-3">
+
+  <!-- Entradas -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h6 class="text-muted mb-1">Entradas totais</h6>
+        <h3 class="text-success mb-0">
+          <i class="fa-solid fa-arrow-down-long me-1"></i>
+          R$ {{ '%.2f'|format(total_entradas) }}
+        </h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saídas -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h6 class="text-muted mb-1">Saídas totais</h6>
+        <h3 class="text-danger mb-0">
+          <i class="fa-solid fa-arrow-up-long me-1"></i>
+          R$ {{ '%.2f'|format(total_saidas) }}
+        </h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saldo -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h6 class="text-muted mb-1">Saldo</h6>
+        <h3 class="{% if saldo >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+          <i class="fa-solid fa-scale-balanced me-1"></i>
+          R$ {{ '%.2f'|format(saldo) }}
+        </h3>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- GRÁFICOS -->
+<div class="row g-3">
+
+  <!-- Pizza -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100 border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <i class="fa-solid fa-chart-pie me-1"></i> Gastos por categoria (mês)
+        </h5>
+
+        <canvas id="pieChart"></canvas>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100 border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <i class="fa-solid fa-chart-line me-1"></i> Evolução diária do saldo
+        </h5>
+
+        <canvas id="lineChart"></canvas>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Barras -->
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100 border-0">
+      <div class="card-body">
+        <h5 class="card-title mb-3">
+          <i class="fa-solid fa-chart-column me-1"></i> Entradas x Saídas
+        </h5>
+
+        <canvas id="barChart"></canvas>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- METAS -->
+<div class="row g-3 mt-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+
+        <h5 class="card-title mb-3">
+          <i class="fa-solid fa-bullseye me-1"></i> Metas do mês
+        </h5>
+
+        {% if goals_progress %}
+          <div class="list-group list-group-flush">
+
+            {% for g in goals_progress %}
+              <div class="list-group-item bg-transparent">
+
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ g.name }}</strong>
+                    {% if g.category_name %}
+                      <small class="text-muted ms-1">({{ g.category_name }})</small>
+                    {% endif %}
+                    <div class="text-muted small">
+                      Atual: R$ {{ '%.2f'|format(g.current) }} /
+                      Meta: R$ {{ '%.2f'|format(g.target) }}
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <span class="badge bg-primary">{{ g.percent }}%</span>
+                  </div>
+                </div>
+
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar"
+                       role="progressbar"
+                       style="width: {{ g.percent }}%;"
+                       aria-valuenow="{{ g.percent }}"
+                       aria-valuemin="0"
+                       aria-valuemax="100"></div>
+                </div>
+
+              </div>
+            {% endfor %}
+
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Nenhuma meta cadastrada ainda.</p>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // PIE
+  const pieData = {{ pie_chart_data | tojson }};
+  const ctxPie = document.getElementById('pieChart');
+
+  if (pieData.length > 0) {
+    new Chart(ctxPie, {
+      type: 'pie',
+      data: {
+        labels: pieData.map(x => x.label),
+        datasets: [{
+          data: pieData.map(x => x.value),
+          backgroundColor: ['#ff6384', '#36a2eb', '#ffcd56', '#4bc0c0', '#9966ff']
+        }]
+      }
+    });
+  }
+
+  // LINE
+  const lineData = {{ line_chart_data | tojson }};
+  const ctxLine = document.getElementById('lineChart');
+
+  new Chart(ctxLine, {
+    type: 'line',
+    data: {
+      labels: lineData.map(x => x.date),
+      datasets: [{
+        label: 'Saldo diário',
+        data: lineData.map(x => x.saldo),
+        borderWidth: 2,
+        borderColor: '#36a2eb'
+      }]
+    }
+  });
+
+  // BAR
+  const barData = {{ bar_chart_data | tojson }};
+  const ctxBar = document.getElementById('barChart');
+
+  new Chart(ctxBar, {
+    type: 'bar',
+    data: {
+      labels: ['Entradas', 'Saídas'],
+      datasets: [{
+        data: [barData.entrada, barData.saida],
+        backgroundColor: ['#4bc0c0', '#ff6384']
+      }]
+    }
+  });
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+venv/
+.env
+
+# Flask instance (db local)
+instance/
+*.db
+
+# Logs / OS
+*.log
+.DS_Store
+
+# Migrations (se quiser versionar depois, remova essa linha)
+# migrations/

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Importar CSV{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">
+    <i class="fa-solid fa-file-import me-1"></i> Importar transações (CSV)
+  </h2>
+
+  <a href="{{ url_for('list_transactions') }}" class="btn btn-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left-long me-1"></i> Voltar
+  </a>
+</div>
+
+{% if message %}
+  <div class="alert alert-info">{{ message }}</div>
+{% endif %}
+
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <p class="text-muted mb-2">
+      O CSV precisa ter o cabeçalho:
+      <code>data,descricao,valor,tipo,categoria,conta</code>
+    </p>
+
+    <form method="post" enctype="multipart/form-data" class="row g-3">
+      <div class="col-md-8">
+        <label class="form-label">Arquivo CSV</label>
+        <input type="file" name="file" class="form-control" accept=".csv" required>
+      </div>
+
+      <div class="col-12">
+        <button class="btn btn-primary">
+          <i class="fa-solid fa-upload me-1"></i> Importar
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

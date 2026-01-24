@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if transaction %}Editar Transação{% else %}Nova Transação{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">
+    {% if transaction %}
+      <i class="fa-solid fa-pen-to-square me-1"></i> Editar Transação
+    {% else %}
+      <i class="fa-solid fa-plus me-1"></i> Nova Transação
+    {% endif %}
+  </h2>
+
+  <a href="{{ url_for('list_transactions') }}" class="btn btn-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left-long me-1"></i> Voltar
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    {% if error %}
+      <div class="alert alert-danger py-2">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" class="row g-3">
+
+      <!-- Descrição -->
+      <div class="col-md-6">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-control"
+               name="description"
+               value="{{ transaction.description if transaction else '' }}"
+               required>
+      </div>
+
+      <!-- Valor -->
+      <div class="col-md-3">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" step="0.01" class="form-control"
+               name="amount"
+               value="{% if transaction %}{{ '%.2f'|format(transaction.amount) }}{% endif %}"
+               required>
+      </div>
+
+      <!-- Tipo -->
+      <div class="col-md-3">
+        <label class="form-label">Tipo</label>
+        <select name="type" class="form-select" required>
+          <option value="entrada"
+            {% if (transaction and transaction.type == 'entrada') or not transaction %}selected{% endif %}>
+            Entrada
+          </option>
+          <option value="saida"
+            {% if transaction and transaction.type == 'saida' %}selected{% endif %}>
+            Saída
+          </option>
+        </select>
+      </div>
+
+      <!-- Data -->
+      <div class="col-md-4">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-control"
+               name="date"
+               value="{% if transaction and transaction.date %}{{ transaction.date.strftime('%Y-%m-%d') }}{% endif %}">
+      </div>
+
+      <!-- Categoria -->
+      <div class="col-md-4">
+        <label class="form-label">Categoria</label>
+        <select name="category_id" class="form-select">
+          <option value="">Sem categoria</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}"
+              {% if transaction and transaction.category_id == c.id %}selected{% endif %}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Conta -->
+      <div class="col-md-4">
+        <label class="form-label">Conta</label>
+        <select name="account_id" class="form-select">
+          <option value="">Sem conta</option>
+          {% for a in accounts %}
+            <option value="{{ a.id }}"
+              {% if transaction and transaction.account_id == a.id %}selected{% endif %}>
+              {{ a.name }} ({{ a.type }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Botões -->
+      <div class="col-12 d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">
+          {% if transaction %}Salvar Alterações{% else %}Salvar{% endif %}
+        </button>
+
+        <a href="{{ url_for('list_transactions') }}" class="btn btn-outline-secondary">
+          Cancelar
+        </a>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

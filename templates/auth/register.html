@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Criar conta - Meu Financeiro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="text-center mb-3">
+          <div class="display-6 mb-1">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <h1 class="h4 mb-0">Criar conta</h1>
+          <p class="text-muted small mb-0">Cadastre-se para começar</p>
+        </div>
+
+        {% if error %}
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          <!-- ✅ NOVO: Nome -->
+          <div class="mb-3">
+            <label class="form-label" for="name">Nome</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                id="name"
+                name="name"
+                placeholder="Seu nome"
+                autocomplete="name"
+                required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="email">Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-at"></i></span>
+              <input
+                type="email"
+                class="form-control"
+                id="email"
+                name="email"
+                placeholder="seuemail@exemplo.com"
+                autocomplete="email"
+                required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="password">Senha</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                placeholder="Crie uma senha"
+                autocomplete="new-password"
+                required>
+              <button class="btn btn-outline-secondary" type="button" id="togglePass1" aria-label="Mostrar senha">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+            <div class="form-text">
+              Dica: use pelo menos 8 caracteres.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="confirm">Confirmar senha</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fa-solid fa-shield-halved"></i></span>
+              <input
+                type="password"
+                class="form-control"
+                id="confirm"
+                name="confirm"
+                placeholder="Repita a senha"
+                autocomplete="new-password"
+                required>
+              <button class="btn btn-outline-secondary" type="button" id="togglePass2" aria-label="Mostrar senha">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fa-solid fa-user-plus me-1"></i> Criar conta
+          </button>
+        </form>
+
+        <div class="mt-3 text-center">
+          <span class="text-muted small">Já tem conta?</span>
+          <a class="small text-decoration-none ms-1" href="{{ url_for('login') }}">Entrar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function() {
+    function bindToggle(btnId, inputId) {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+      if (!btn || !input) return;
+
+      btn.addEventListener("click", () => {
+        const isHidden = input.getAttribute("type") === "password";
+        input.setAttribute("type", isHidden ? "text" : "password");
+        btn.innerHTML = isHidden
+          ? '<i class="fa-regular fa-eye-slash"></i>'
+          : '<i class="fa-regular fa-eye"></i>';
+      });
+    }
+
+    bindToggle("togglePass1", "password");
+    bindToggle("togglePass2", "confirm");
+  })();
+</script>
+{% endblock %}
