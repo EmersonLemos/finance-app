@@ -95,10 +95,25 @@ def create_app():
     # SECRET_KEY (para flash e sessão do login)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-    # DB (instance/finance.db)
+# ============================================================
+# DATABASE (Postgres em produção / SQLite local)
+# ============================================================
+db_url = os.environ.get("DATABASE_URL")
+
+# Railway/Heroku às vezes usam postgres://, mas o SQLAlchemy prefere postgresql://
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+if db_url:
+    # Produção (Railway) -> Postgres
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+else:
+    # Local (WSL) -> SQLite em instance/finance.db
     db_path = os.path.join(app.instance_path, "finance.db")
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+se
 
     db.init_app(app)
     migrate = Migrate(app, db)
