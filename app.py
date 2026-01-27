@@ -1,7 +1,6 @@
 import os
 import csv
 from datetime import datetime, timedelta
-from flask_migrate import Migrate
 from io import BytesIO, StringIO
 
 from flask import (
@@ -14,6 +13,7 @@ from flask import (
     Response,
     flash,
 )
+from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
     login_user,
@@ -89,34 +89,28 @@ def get_owned_or_404(model, obj_id: int):
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
 
-    # garante pasta instance/
-    os.makedirs(app.instance_path, exist_ok=True)
-
     # SECRET_KEY (para flash e sessão do login)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
-# ============================================================
-# DATABASE (Postgres em produção / SQLite local)
-# ============================================================
+    # ============================================================
+    # DATABASE (Somente PostgreSQL)
+    # ============================================================
     db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        raise RuntimeError(
+            "DATABASE_URL não definido. Ex:\n"
+            "postgresql+psycopg2://usuario:senha@localhost:5432/finance_app"
+        )
 
-# Railway/Heroku às vezes usam postgres://, mas o SQLAlchemy prefere postgresql://
-    if db_url and db_url.startswith("postgres://"):
+    # Railway/Heroku às vezes usam postgres://, mas o SQLAlchemy prefere postgresql://
+    if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-    if db_url:
-    # Produção (Railway) -> Postgres
-        app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-    else:
-    # Local (WSL) -> SQLite em instance/finance.db
-        db_path = os.path.join(app.instance_path, "finance.db")
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
-    migrate = Migrate(app, db)
-
+    Migrate(app, db)
 
     # ----------------------------
     # LOGIN MANAGER
@@ -128,6 +122,8 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
+        # preferível usar session.get no SQLAlchemy 2.0,
+        # mas isso aqui funciona bem também
         return User.query.get(int(user_id))
 
     # ============================================================
@@ -399,7 +395,6 @@ def create_app():
             stmt = stmt.where(Transaction.type == tx_type)
 
         if category_id:
-            # opcional: valida se a categoria é do usuário
             stmt = stmt.where(Transaction.category_id == category_id)
 
         if account_id:
@@ -520,12 +515,12 @@ def create_app():
 
             if date_str:
                 try:
-                    date = datetime.strptime(date_str, "%Y-%m-%d")
+                    tx_date = datetime.strptime(date_str, "%Y-%m-%d")
                 except ValueError:
-                    date = datetime.utcnow()
+                    tx_date = datetime.utcnow()
                     flash("Data inválida, use YYYY-MM-DD. Usei a data de hoje.", "warning")
             else:
-                date = datetime.utcnow()
+                tx_date = datetime.utcnow()
 
             category_id = int(category_id_str) if category_id_str else None
             account_id = int(account_id_str) if account_id_str else None
@@ -535,7 +530,7 @@ def create_app():
                 description=description,
                 amount=float(amount),
                 type=tx_type,
-                date=date,
+                date=tx_date,
                 category_id=category_id,
                 account_id=account_id,
             )
@@ -612,17 +607,17 @@ def create_app():
 
             if date_str:
                 try:
-                    date = datetime.strptime(date_str, "%Y-%m-%d")
+                    tx_date = datetime.strptime(date_str, "%Y-%m-%d")
                 except ValueError:
-                    date = tx.date
+                    tx_date = tx.date
                     flash("Data inválida (YYYY-MM-DD). Mantive a data anterior.", "warning")
             else:
-                date = tx.date
+                tx_date = tx.date
 
             tx.description = description
             tx.amount = float(amount)
             tx.type = tx_type
-            tx.date = date
+            tx.date = tx_date
             tx.category_id = int(category_id_str) if category_id_str else None
             tx.account_id = int(account_id_str) if account_id_str else None
 
@@ -666,7 +661,7 @@ def create_app():
             if not file:
                 flash("Selecione um arquivo CSV.", "error")
                 return redirect(url_for("import_transactions"))
-            
+
             raw = file.read().decode("utf-8-sig", errors="ignore")
 
             first_line = raw.splitlines()[0] if raw else ""
@@ -716,7 +711,7 @@ def create_app():
                     if tipo not in ("entrada", "saida"):
                         raise ValueError("tipo inválido")
                     amount = safe_float_br(valor)
-                    date = datetime.strptime(data, "%Y-%m-%d")
+                    tx_date = datetime.strptime(data, "%Y-%m-%d")
 
                     cat_id = None
                     if cat_name:
@@ -741,7 +736,7 @@ def create_app():
                         description=descricao,
                         amount=float(amount),
                         type=tipo,
-                        date=date,
+                        date=tx_date,
                         category_id=cat_id,
                         account_id=acc_id,
                     )
@@ -896,11 +891,21 @@ def create_app():
 
             if not name:
                 flash("Nome é obrigatório.", "error")
-                return render_template("categories/form.html", category=None, error="Nome é obrigatório.", current_page="categories")
+                return render_template(
+                    "categories/form.html",
+                    category=None,
+                    error="Nome é obrigatório.",
+                    current_page="categories",
+                )
 
             if Category.query.filter_by(user_id=uid, name=name).first():
                 flash("Categoria já existe.", "error")
-                return render_template("categories/form.html", category=None, error="Categoria já existe.", current_page="categories")
+                return render_template(
+                    "categories/form.html",
+                    category=None,
+                    error="Categoria já existe.",
+                    current_page="categories",
+                )
 
             try:
                 db.session.add(Category(user_id=uid, name=name))
@@ -927,16 +932,26 @@ def create_app():
 
             if not name:
                 flash("Nome é obrigatório.", "error")
-                return render_template("categories/form.html", category=category, error="Nome é obrigatório.", current_page="categories")
+                return render_template(
+                    "categories/form.html",
+                    category=category,
+                    error="Nome é obrigatório.",
+                    current_page="categories",
+                )
 
             exists = Category.query.filter(
                 Category.user_id == uid,
                 Category.name == name,
-                Category.id != cat_id
+                Category.id != cat_id,
             ).first()
             if exists:
                 flash("Já existe outra categoria com esse nome.", "error")
-                return render_template("categories/form.html", category=category, error="Já existe outra categoria com esse nome.", current_page="categories")
+                return render_template(
+                    "categories/form.html",
+                    category=category,
+                    error="Já existe outra categoria com esse nome.",
+                    current_page="categories",
+                )
 
             try:
                 category.name = name
@@ -957,10 +972,13 @@ def create_app():
     def delete_category(cat_id):
         category = get_owned_or_404(Category, cat_id)
 
-        has_tx = Transaction.query.filter(
-            Transaction.user_id == current_user.id,
-            Transaction.category_id == cat_id
-        ).first() is not None
+        has_tx = (
+            Transaction.query.filter(
+                Transaction.user_id == current_user.id,
+                Transaction.category_id == cat_id,
+            ).first()
+            is not None
+        )
 
         if has_tx:
             flash("Não é possível excluir: existem transações vinculadas a esta categoria.", "error")
@@ -1092,7 +1110,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
 
