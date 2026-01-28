@@ -124,7 +124,7 @@ def create_app():
     def load_user(user_id):
         # preferível usar session.get no SQLAlchemy 2.0,
         # mas isso aqui funciona bem também
-        return User.query.get(int(user_id))
+        return db.session.get(User, int(user_id))
 
     # ============================================================
     # AUTH
