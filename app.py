@@ -2,24 +2,12 @@ import os
 import csv
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
-from dotenv import load_dotenv
 
-env = os.getenv("APP_ENV", "dev")  # dev ou prod
-load_dotenv(f".env.{env}")
-
-from flask import Flask
-from models import db
-
-from config import DevConfig, ProdConfig
-
-app = Flask(__name__)
-
-if env == "prod":
-    app.config.from_object(ProdConfig)
-else:
-    app.config.from_object(DevConfig)
-
-db.init_app(app)
+# dotenv é opcional (DEV apenas). Em PROD variáveis vêm do servidor.
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    load_dotenv = None
 
 from flask import (
     Flask,
@@ -105,6 +93,17 @@ def get_owned_or_404(model, obj_id: int):
 # APP FACTORY
 # ============================================================
 def create_app():
+    """
+    Fábrica do app.
+    - Em DEV: carrega .env.dev (se python-dotenv existir)
+    - Em PROD: NÃO depende de dotenv (usa variáveis do servidor)
+    """
+    env = os.getenv("APP_ENV", "dev")  # dev ou prod
+
+    # Carrega .env somente fora de prod (e somente se dotenv existir)
+    if load_dotenv and env != "prod":
+        load_dotenv(f".env.{env}")
+
     app = Flask(__name__, instance_relative_config=True)
 
     # SECRET_KEY (para flash e sessão do login)
@@ -140,8 +139,6 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        # preferível usar session.get no SQLAlchemy 2.0,
-        # mas isso aqui funciona bem também
         return db.session.get(User, int(user_id))
 
     # ============================================================
@@ -179,7 +176,6 @@ def create_app():
                 db.session.add(u)
                 db.session.commit()
 
-                # cria contas padrão do usuário
                 seed_defaults_for_user(u.id)
 
                 flash("Conta criada! Faça login.", "success")
@@ -209,7 +205,6 @@ def create_app():
 
             login_user(user)
 
-            # garante contas padrão para quem já existia antes dessa feature
             try:
                 seed_defaults_for_user(user.id)
             except Exception:
@@ -240,7 +235,6 @@ def create_app():
 
         uid = current_user.id
 
-        # totais gerais (do usuário)
         total_entradas = (
             db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0.0))
             .filter(Transaction.user_id == uid, Transaction.type == "entrada")
@@ -253,7 +247,6 @@ def create_app():
         )
         saldo = float(total_entradas or 0.0) - float(total_saidas or 0.0)
 
-        # totais do mês atual (do usuário)
         total_entradas_mes = (
             db.session.query(db.func.coalesce(db.func.sum(Transaction.amount), 0.0))
             .filter(
@@ -275,7 +268,6 @@ def create_app():
             .scalar()
         )
 
-        # pizza: gastos por categoria no mês (do usuário)
         pie_results = (
             db.session.query(
                 Category.name,
@@ -299,7 +291,6 @@ def create_app():
             if (total or 0.0) > 0
         ]
 
-        # linha: evolução diária do saldo no mês (do usuário)
         tx_month = (
             Transaction.query.filter(
                 Transaction.user_id == uid,
@@ -325,13 +316,11 @@ def create_app():
             line_chart_data.append({"date": day_str, "saldo": running})
             day += timedelta(days=1)
 
-        # barras: entradas x saídas (mês)
         bar_chart_data = {
             "entrada": float(total_entradas_mes or 0.0),
             "saida": float(total_saidas_mes or 0.0),
         }
 
-        # metas (do usuário)
         goals = (
             Goal.query.filter(
                 Goal.user_id == uid,
@@ -1127,6 +1116,5 @@ def create_app():
 
 
 if __name__ == "__main__":
-    app = create_app()
-    app.run(debug=True)
-
+    application = create_app()
+    application.run(debug=True)
