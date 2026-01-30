@@ -21,3 +21,20 @@ instance/
 
 # Migrations (se quiser versionar depois, remova essa linha)
 # migrations/
+# Environment variables
+.env
+.env.*
+migrations/.env.*
+
+# Databases
+*.db
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / Editor
+.DS_Store
+.vscode/
+# Windows metadata
+*:Zone.Identifier

@@ -2,6 +2,24 @@ import os
 import csv
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
+from dotenv import load_dotenv
+
+env = os.getenv("APP_ENV", "dev")  # dev ou prod
+load_dotenv(f".env.{env}")
+
+from flask import Flask
+from models import db
+
+from config import DevConfig, ProdConfig
+
+app = Flask(__name__)
+
+if env == "prod":
+    app.config.from_object(ProdConfig)
+else:
+    app.config.from_object(DevConfig)
+
+db.init_app(app)
 
 from flask import (
     Flask,
