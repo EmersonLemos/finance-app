@@ -3,11 +3,51 @@ import csv
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 
-# dotenv é opcional (DEV apenas). Em PROD variáveis vêm do servidor.
+# ------------------------------------------------------------
+# ENV / DOTENV
+# ------------------------------------------------------------
+# python-dotenv é opcional (útil só em DEV/local).
+# Em PROD, as variáveis devem vir do servidor (systemd, painel, etc.).
 try:
     from dotenv import load_dotenv
 except ModuleNotFoundError:
     load_dotenv = None
+
+
+def get_app_env() -> str:
+    """
+    Lê APP_ENV e normaliza.
+    Valores suportados: dev | prod
+    """
+    env = os.getenv("APP_ENV", "dev").strip().lower()
+    return "prod" if env == "prod" else "dev"
+
+
+def load_env_files() -> str:
+    """
+    Carrega variáveis do arquivo .env apenas em DEV.
+
+    - DEV: tenta carregar .env.dev (se existir)
+    - PROD: não carrega arquivo (usa variáveis do servidor)
+    """
+    env = get_app_env()
+
+    # Segurança: em prod não carrega arquivo; e sem python-dotenv não faz nada.
+    if env == "prod" or not load_dotenv:
+        return env
+
+    dotenv_path = f".env.{env}"  # ex: .env.dev
+    if os.path.exists(dotenv_path):
+        load_dotenv(dotenv_path, override=False)
+    else:
+        # fallback opcional (se você tiver um .env genérico)
+        load_dotenv(override=False)
+
+    return env
+
+
+# Carrega o ambiente logo no import do arquivo (DEV apenas)
+APP_ENV = load_env_files()
 
 from flask import (
     Flask,
@@ -95,28 +135,26 @@ def get_owned_or_404(model, obj_id: int):
 def create_app():
     """
     Fábrica do app.
-    - Em DEV: carrega .env.dev (se python-dotenv existir)
-    - Em PROD: NÃO depende de dotenv (usa variáveis do servidor)
-    """
-    env = os.getenv("APP_ENV", "dev")  # dev ou prod
 
-    # Carrega .env somente fora de prod (e somente se dotenv existir)
-    if load_dotenv and env != "prod":
-        load_dotenv(f".env.{env}")
+    - DEV: usa .env.dev (SQLite) quando python-dotenv existir
+    - PROD: NÃO lê arquivo .env; usa variáveis do servidor
+    """
+    env = APP_ENV
 
     app = Flask(__name__, instance_relative_config=True)
 
-    # SECRET_KEY (para flash e sessão do login)
+    # SECRET_KEY (flash messages e sessão do login)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
     # ============================================================
-    # DATABASE (Somente PostgreSQL)
+    # DATABASE (DEV: SQLite | PROD: Postgres)
     # ============================================================
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         raise RuntimeError(
-            "DATABASE_URL não definido. Ex:\n"
-            "postgresql+psycopg2://usuario:senha@localhost:5432/finance_app"
+            "DATABASE_URL não definido.\n"
+            "Ex (DEV): sqlite:///dev.db\n"
+            "Ex (PROD): postgresql+psycopg2://usuario:senha@host:5432/finance_prod"
         )
 
     # Railway/Heroku às vezes usam postgres://, mas o SQLAlchemy prefere postgresql://
@@ -1022,15 +1060,30 @@ def create_app():
 
             if not name:
                 flash("Nome é obrigatório.", "error")
-                return render_template("accounts/form.html", account=None, error="Nome é obrigatório.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=None,
+                    error="Nome é obrigatório.",
+                    current_page="accounts",
+                )
 
             if not acc_type:
                 flash("Tipo é obrigatório.", "error")
-                return render_template("accounts/form.html", account=None, error="Tipo é obrigatório.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=None,
+                    error="Tipo é obrigatório.",
+                    current_page="accounts",
+                )
 
             if Account.query.filter_by(user_id=uid, name=name).first():
                 flash("Conta já existe.", "error")
-                return render_template("accounts/form.html", account=None, error="Conta já existe.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=None,
+                    error="Conta já existe.",
+                    current_page="accounts",
+                )
 
             try:
                 db.session.add(Account(user_id=uid, name=name, type=acc_type))
@@ -1058,20 +1111,35 @@ def create_app():
 
             if not name:
                 flash("Nome é obrigatório.", "error")
-                return render_template("accounts/form.html", account=account, error="Nome é obrigatório.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=account,
+                    error="Nome é obrigatório.",
+                    current_page="accounts",
+                )
 
             if not acc_type:
                 flash("Tipo é obrigatório.", "error")
-                return render_template("accounts/form.html", account=account, error="Tipo é obrigatório.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=account,
+                    error="Tipo é obrigatório.",
+                    current_page="accounts",
+                )
 
             exists = Account.query.filter(
                 Account.user_id == uid,
                 Account.name == name,
-                Account.id != account_id
+                Account.id != account_id,
             ).first()
             if exists:
                 flash("Já existe outra conta com esse nome.", "error")
-                return render_template("accounts/form.html", account=account, error="Já existe outra conta com esse nome.", current_page="accounts")
+                return render_template(
+                    "accounts/form.html",
+                    account=account,
+                    error="Já existe outra conta com esse nome.",
+                    current_page="accounts",
+                )
 
             try:
                 account.name = name
@@ -1093,10 +1161,13 @@ def create_app():
     def delete_account(account_id):
         account = get_owned_or_404(Account, account_id)
 
-        has_tx = Transaction.query.filter(
-            Transaction.user_id == current_user.id,
-            Transaction.account_id == account_id
-        ).first() is not None
+        has_tx = (
+            Transaction.query.filter(
+                Transaction.user_id == current_user.id,
+                Transaction.account_id == account_id,
+            ).first()
+            is not None
+        )
 
         if has_tx:
             flash("Não é possível excluir: existem transações vinculadas a esta conta.", "error")
@@ -1117,4 +1188,4 @@ def create_app():
 
 if __name__ == "__main__":
     application = create_app()
-    application.run(debug=True)
+    application.run(debug=(APP_ENV != "prod"))

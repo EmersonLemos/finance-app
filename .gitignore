@@ -1,40 +1,53 @@
+# ----------------------------
 # Python
+# ----------------------------
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
+*.so
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+.mypy_cache/
 
-# Virtual env
+# ----------------------------
+# Virtualenv
+# ----------------------------
 venv/
-.env
+.venv/
 
-# Flask instance (db local)
-instance/
-*.db
-
-# Logs / OS
-*.log
-.DS_Store
-
-# Migrations (se quiser versionar depois, remova essa linha)
-# migrations/
-# Environment variables
+# ----------------------------
+# Environment variables (NUNCA commitar)
+# ----------------------------
 .env
 .env.*
 migrations/.env.*
 
-# Databases
+# ----------------------------
+# Flask / instance
+# ----------------------------
+instance/
+
+# ----------------------------
+# Databases (SQLite DEV)
+# ----------------------------
 *.db
+*.sqlite
+*.sqlite3
 
-# Python
-__pycache__/
-*.pyc
+# ----------------------------
+# Logs
+# ----------------------------
+*.log
 
+# ----------------------------
 # OS / Editor
+# ----------------------------
 .DS_Store
 .vscode/
+.idea/
+
 # Windows metadata
 *:Zone.Identifier
+Thumbs.db
