@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Importar CSV{% endblock %}
+{% block title %}Importar transações (CSV){% endblock %}
 
 {% block content %}
 
@@ -8,41 +8,87 @@
     <i class="fa-solid fa-file-import me-1"></i> Importar transações (CSV)
   </h2>
 
-  <a href="{{ url_for('list_transactions') }}" class="btn btn-secondary btn-sm">
-    <i class="fa-solid fa-arrow-left-long me-1"></i> Voltar
+  <a href="{{ url_for('transactions.list_transactions') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left me-1"></i> Voltar
   </a>
 </div>
-
-{% if message %}
-  <div class="alert alert-info">{{ message }}</div>
-{% endif %}
-
-{% if error %}
-  <div class="alert alert-danger">{{ error }}</div>
-{% endif %}
 
 <div class="card shadow-sm">
   <div class="card-body">
 
-    <p class="text-muted mb-2">
+    <div class="alert alert-info py-2 mb-3">
       O CSV precisa ter o cabeçalho:
       <code>data,descricao,valor,tipo,categoria,conta</code>
-    </p>
+    </div>
 
-    <form method="post" enctype="multipart/form-data" class="row g-3">
-      <div class="col-md-8">
-        <label class="form-label">Arquivo CSV</label>
-        <input type="file" name="file" class="form-control" accept=".csv" required>
+    <form
+      id="csvImportForm"
+      action="{{ url_for('transactions.import_transactions') }}"
+      method="post"
+      enctype="multipart/form-data"
+      class="d-flex flex-column gap-2"
+    >
+
+      <!-- Input escondido (pra não aparecer "Escolher ficheiro") -->
+      <input type="file" name="file" id="csvFile" accept=".csv" class="d-none" required>
+
+      <label class="form-label mb-1">Arquivo CSV</label>
+
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button type="button" class="btn btn-outline-primary btn-sm" id="btnPickCsv">
+          <i class="fa-solid fa-folder-open me-1"></i> Escolher CSV
+        </button>
+
+        <span id="csvFileName" class="text-muted small">
+          Nenhum arquivo selecionado
+        </span>
       </div>
 
-      <div class="col-12">
-        <button class="btn btn-primary">
+      <div class="d-flex gap-2 mt-2">
+        <button type="submit" class="btn btn-primary btn-sm" id="btnImport" disabled>
           <i class="fa-solid fa-upload me-1"></i> Importar
         </button>
-      </div>
-    </form>
 
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnClear" disabled>
+          Limpar
+        </button>
+      </div>
+
+    </form>
   </div>
 </div>
+
+<script>
+(function () {
+  const fileInput = document.getElementById("csvFile");
+  const btnPick = document.getElementById("btnPickCsv");
+  const btnImport = document.getElementById("btnImport");
+  const btnClear = document.getElementById("btnClear");
+  const fileName = document.getElementById("csvFileName");
+
+  if (!fileInput || !btnPick || !btnImport || !btnClear || !fileName) return;
+
+  btnPick.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      fileName.textContent = fileInput.files[0].name;
+      btnImport.disabled = false;
+      btnClear.disabled = false;
+    } else {
+      fileName.textContent = "Nenhum arquivo selecionado";
+      btnImport.disabled = true;
+      btnClear.disabled = true;
+    }
+  });
+
+  btnClear.addEventListener("click", () => {
+    fileInput.value = "";
+    fileName.textContent = "Nenhum arquivo selecionado";
+    btnImport.disabled = true;
+    btnClear.disabled = true;
+  });
+})();
+</script>
 
 {% endblock %}

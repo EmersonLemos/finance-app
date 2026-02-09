@@ -15,7 +15,7 @@
         {% endif %}
     </h2>
 
-    <a href="{{ url_for('list_accounts') }}" class="btn btn-secondary btn-sm">
+    <a href="{{ url_for('accounts.list_accounts') }}" class="btn btn-secondary btn-sm">
         <i class="fa-solid fa-arrow-left-long me-1"></i> Voltar
     </a>
 </div>
@@ -72,7 +72,7 @@
                     {% if account %}Salvar alterações{% else %}Cadastrar{% endif %}
                 </button>
 
-                <a href="{{ url_for('list_accounts') }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('accounts.list_accounts') }}" class="btn btn-outline-secondary">
                     Cancelar
                 </a>
             </div>

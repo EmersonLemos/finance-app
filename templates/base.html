@@ -72,7 +72,7 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
   <div class="container-fluid">
 
-    <a class="navbar-brand" href="{{ url_for('index') }}">
+    <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
       <i class="fa-solid fa-wallet me-2"></i>Meu Financeiro
     </a>
 
@@ -86,40 +86,43 @@
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
         {% if current_user.is_authenticated %}
+
           <li class="nav-item">
             <a class="nav-link {% if current_page == 'dashboard' %}active{% endif %}"
-               href="{{ url_for('index') }}">
+               href="{{ url_for('dashboard.index') }}">
               <i class="fa-solid fa-chart-line me-1"></i>Dashboard
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link {% if current_page == 'transactions' %}active{% endif %}"
-               href="{{ url_for('list_transactions') }}">
+               href="{{ url_for('transactions.list_transactions') }}">
               <i class="fa-solid fa-receipt me-1"></i>Transações
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link {% if current_page == 'categories' %}active{% endif %}"
-               href="{{ url_for('list_categories') }}">
+               href="{{ url_for('categories.list_categories') }}">
               <i class="fa-solid fa-tags me-1"></i>Categorias
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link {% if current_page == 'accounts' %}active{% endif %}"
-               href="{{ url_for('list_accounts') }}">
+               href="{{ url_for('accounts.list_accounts') }}">
               <i class="fa-solid fa-building-columns me-1"></i>Contas
             </a>
           </li>
 
+          <!-- 🔥 NOVA ABA IMPORT CSV -->
           <li class="nav-item">
-            <a class="nav-link {% if current_page == 'import' %}active{% endif %}"
-               href="{{ url_for('import_transactions') }}">
+            <a class="nav-link {% if current_page == 'import_csv' %}active{% endif %}"
+               href="{{ url_for('transactions.import_transactions') }}">
               <i class="fa-solid fa-file-import me-1"></i>Importar CSV
             </a>
           </li>
+
         {% endif %}
 
       </ul>
@@ -148,7 +151,7 @@
               </li>
               <li><hr class="dropdown-divider"></li>
               <li>
-                <form method="POST" action="{{ url_for('logout') }}">
+                <form method="POST" action="{{ url_for('auth.logout') }}">
                   <button type="submit" class="dropdown-item">
                     <i class="fa-solid fa-right-from-bracket me-1"></i>Sair
                   </button>
@@ -157,10 +160,10 @@
             </ul>
           </div>
         {% else %}
-          <a class="btn btn-outline-light btn-sm" href="{{ url_for('login') }}">
+          <a class="btn btn-outline-light btn-sm" href="{{ url_for('auth.login') }}">
             <i class="fa-solid fa-right-to-bracket me-1"></i>Entrar
           </a>
-          <a class="btn btn-light btn-sm" href="{{ url_for('register') }}">
+          <a class="btn btn-light btn-sm" href="{{ url_for('auth.register') }}">
             <i class="fa-solid fa-user-plus me-1"></i>Criar conta
           </a>
         {% endif %}
