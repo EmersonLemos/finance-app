@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Score - Regra{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <h2 class="h4">
+    {% if rule %}
+      Editar regra de score
+    {% else %}
+      Nova regra de score
+    {% endif %}
+  </h2>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <form method="post">
+
+      <!-- Categoria -->
+      <div class="mb-3">
+        <label class="form-label">Categoria</label>
+
+        {% if rule %}
+          <input type="text" class="form-control"
+                 value="{{ category_name }}"
+                 disabled>
+        {% else %}
+          <select name="category_id" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}">
+                {{ c.name }}
+              </option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+
+      <!-- Limite mensal -->
+      <div class="mb-3">
+        <label class="form-label">Limite mensal (R$)</label>
+        <input type="number"
+               step="0.01"
+               name="monthly_limit"
+               class="form-control"
+               value="{{ rule.monthly_limit if rule else '' }}"
+               required>
+      </div>
+
+      <!-- Percentual alerta -->
+      <div class="mb-3">
+        <label class="form-label">Percentual de alerta</label>
+        <input type="number"
+               step="0.01"
+               name="warning_pct"
+               class="form-control"
+               value="{{ rule.warning_pct if rule else '0.80' }}"
+               required>
+
+        <div class="form-text">
+          Ex: 0.80 = alerta ao atingir 80% do limite
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+
+        <a href="{{ url_for('score.list_score') }}"
+           class="btn btn-outline-secondary">
+           Voltar
+        </a>
+
+        <button type="submit" class="btn btn-primary">
+          Salvar
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

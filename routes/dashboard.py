@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 
-from models import db, Transaction, Category, Goal
+from models import db, Transaction, Category, Goal, ScoreRule
 from utils import month_range_from_str
 
 bp = Blueprint("dashboard", __name__)
@@ -149,6 +149,70 @@ def index():
             }
         )
 
+    # ============================================================
+    # ✅ SCORE DO MÊS (resumo para a tela inicial)
+    # ============================================================
+    rules = (
+        db.session.query(ScoreRule, Category)
+        .join(Category, Category.id == ScoreRule.category_id)
+        .filter(ScoreRule.user_id == uid, ScoreRule.active.is_(True))
+        .order_by(Category.name.asc())
+        .all()
+    )
+
+    spent_rows = (
+        db.session.query(
+            Transaction.category_id,
+            db.func.coalesce(db.func.sum(Transaction.amount), 0.0).label("spent"),
+        )
+        .filter(
+            Transaction.user_id == uid,
+            Transaction.type == "saida",
+            Transaction.date >= start_month,
+            Transaction.date < next_month,
+        )
+        .group_by(Transaction.category_id)
+        .all()
+    )
+
+    spent_map = {cid: float(spent) for cid, spent in spent_rows}
+
+    score_items = []
+    for rule, cat in rules:
+        limit = float(rule.monthly_limit or 0.0)
+        warn_pct = float(rule.warning_pct or 0.8)
+        spent = float(spent_map.get(cat.id, 0.0))
+
+        pct = (spent / limit) if limit > 0 else 0.0
+
+        if pct > 1:
+            status = "red"
+        elif pct >= warn_pct:
+            status = "yellow"
+        else:
+            status = "green"
+
+        score_items.append(
+            {
+                "category": cat.name,
+                "spent": spent,
+                "limit": limit,
+                "pct": pct,
+                "status": status,
+            }
+        )
+
+    # Mostra no dashboard as “piores” (mais perto de estourar)
+    score_items_sorted = sorted(score_items, key=lambda x: x["pct"], reverse=True)
+    score_top = score_items_sorted[:5]
+
+    score_summary = {
+        "green": sum(1 for i in score_items if i["status"] == "green"),
+        "yellow": sum(1 for i in score_items if i["status"] == "yellow"),
+        "red": sum(1 for i in score_items if i["status"] == "red"),
+        "total": len(score_items),
+    }
+
     return render_template(
         "index.html",
         current_page="dashboard",
@@ -160,4 +224,8 @@ def index():
         line_chart_data=line_chart_data or [],
         bar_chart_data=bar_chart_data or {"entrada": 0.0, "saida": 0.0},
         goals_progress=goals_progress or [],
+
+        # ✅ score no dashboard
+        score_top=score_top,
+        score_summary=score_summary,
     )

@@ -3,7 +3,6 @@
 
 {% block content %}
 
-
 <!-- TÍTULO -->
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="h4 mb-0">
@@ -53,6 +52,78 @@
     </div>
   </div>
 
+</div>
+
+<!-- ✅ SCORE DO MÊS (NOVO) -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <h5 class="card-title mb-0">
+              <i class="fa-solid fa-gauge-high me-1"></i> Score do mês
+            </h5>
+            <div class="text-muted small">{{ month_year }}</div>
+          </div>
+
+          <a class="btn btn-outline-primary btn-sm" href="{{ url_for('score.list_score') }}">
+            Ver Score
+          </a>
+        </div>
+
+        {% if score_summary.total == 0 %}
+          <div class="alert alert-info mb-0">
+            Você ainda não criou regras de score. Vá em <strong>Score</strong> e crie sua primeira regra.
+          </div>
+        {% else %}
+
+          <div class="d-flex gap-2 flex-wrap mb-3">
+            <span class="badge text-bg-success">Verde: {{ score_summary.green }}</span>
+            <span class="badge text-bg-warning">Amarelo: {{ score_summary.yellow }}</span>
+            <span class="badge text-bg-danger">Vermelho: {{ score_summary.red }}</span>
+            <span class="badge text-bg-secondary">Total: {{ score_summary.total }}</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Categoria</th>
+                  <th class="text-end">Gasto</th>
+                  <th class="text-end">Limite</th>
+                  <th class="text-end">%</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in score_top %}
+                  <tr>
+                    <td>{{ it.category }}</td>
+                    <td class="text-end">R$ {{ "%.2f"|format(it.spent) }}</td>
+                    <td class="text-end">R$ {{ "%.2f"|format(it.limit) }}</td>
+                    <td class="text-end">{{ (it.pct * 100) | round(1) }}%</td>
+                    <td>
+                      {% if it.status == "green" %}
+                        <span class="badge text-bg-success">Verde</span>
+                      {% elif it.status == "yellow" %}
+                        <span class="badge text-bg-warning">Amarelo</span>
+                      {% else %}
+                        <span class="badge text-bg-danger">Vermelho</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- GRÁFICOS -->

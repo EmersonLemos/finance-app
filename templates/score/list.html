@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Score - Meu Financeiro{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h4 mb-0">Score mensal</h2>
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('score.list_score', year=prev_year, m=prev_month) }}">←</a>
+
+    <div class="btn btn-light btn-sm">
+      {{ "%02d"|format(month) }}/{{ year }}
+    </div>
+
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{{ url_for('score.list_score', year=next_year, m=next_month) }}">→</a>
+
+    <a class="btn btn-primary btn-sm" href="{{ url_for('score.new_rule') }}">
+      Nova regra
+    </a>
+  </div>
+</div>
+
+<div class="text-muted mb-3">
+  Período: {{ start.strftime("%d/%m/%Y") }} até {{ end.strftime("%d/%m/%Y") }}
+</div>
+
+{% if items|length == 0 %}
+  <div class="alert alert-info">
+    Nenhuma regra criada ainda. Clique em <strong>Nova regra</strong>.
+  </div>
+{% else %}
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Categoria</th>
+            <th class="text-end">Gasto</th>
+            <th class="text-end">Limite</th>
+            <th class="text-end">%</th>
+            <th>Status</th>
+            <th class="text-end">Restante</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+          <tr>
+            <td>{{ it.category.name }}</td>
+
+            <td class="text-end">R$ {{ "%.2f"|format(it.spent) }}</td>
+            <td class="text-end">R$ {{ "%.2f"|format(it.limit) }}</td>
+            <td class="text-end">{{ (it.pct * 100) | round(1) }}%</td>
+
+            <td>
+              {% if it.status == "green" %}
+                <span class="badge text-bg-success">Verde</span>
+              {% elif it.status == "yellow" %}
+                <span class="badge text-bg-warning">Amarelo</span>
+              {% else %}
+                <span class="badge text-bg-danger">Vermelho</span>
+              {% endif %}
+            </td>
+
+            <td class="text-end">R$ {{ "%.2f"|format(it.remaining) }}</td>
+
+            <td class="text-end">
+              <a class="btn btn-outline-secondary btn-sm"
+                 href="{{ url_for('score.edit_rule', rule_id=it.rule.id) }}">
+                 Editar
+              </a>
+
+              <form class="d-inline" method="post"
+                    action="{{ url_for('score.delete_rule', rule_id=it.rule.id) }}"
+                    onsubmit="return confirm('Remover regra?');">
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                  Remover
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

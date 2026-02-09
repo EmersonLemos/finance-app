@@ -77,7 +77,12 @@ class Transaction(db.Model):
 
     description = db.Column(db.String(120), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # "entrada" ou "saida"
+
+    # mantendo seu padrão atual:
+    # - "entrada" ou "saida"
+    type = db.Column(db.String(10), nullable=False)
+
+    # DateTime (como você já usa)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
@@ -118,3 +123,37 @@ class Goal(db.Model):
 
     def __repr__(self):
         return f"<Goal {self.name} ({self.type})>"
+
+
+class ScoreRule(db.Model):
+    """
+    Regras do Score (controle mensal por categoria)
+
+    - monthly_limit: limite mensal em R$
+    - warning_pct: percentual (0.80 = 80%) a partir do qual fica "amarelo"
+    - active: permite desativar sem apagar
+    """
+    __tablename__ = "score_rules"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # dono
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    user = db.relationship("User", backref=db.backref("score_rules", lazy=True))
+
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False, index=True)
+    category = db.relationship("Category", backref=db.backref("score_rules", lazy=True))
+
+    monthly_limit = db.Column(db.Float, nullable=False)
+    warning_pct = db.Column(db.Float, nullable=False, default=0.80)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "category_id", name="uq_score_rules_user_category"),
+    )
+
+    def __repr__(self):
+        return f"<ScoreRule user={self.user_id} cat={self.category_id} limit={self.monthly_limit}>"

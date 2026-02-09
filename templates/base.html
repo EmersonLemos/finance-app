@@ -115,11 +115,19 @@
             </a>
           </li>
 
-          <!-- 🔥 NOVA ABA IMPORT CSV -->
+          <!-- IMPORT CSV -->
           <li class="nav-item">
             <a class="nav-link {% if current_page == 'import_csv' %}active{% endif %}"
                href="{{ url_for('transactions.import_transactions') }}">
               <i class="fa-solid fa-file-import me-1"></i>Importar CSV
+            </a>
+          </li>
+
+          <!-- SCORE -->
+          <li class="nav-item">
+            <a class="nav-link {% if current_page == 'score' %}active{% endif %}"
+               href="{{ url_for('score.list_score') }}">
+              <i class="fa-solid fa-gauge-high me-1"></i>Score
             </a>
           </li>
 
