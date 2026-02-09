@@ -47,7 +47,7 @@
                                 </a>
 
                                 <form method="post"
-                                    action="{{ url_for('delete_category', cat_id=c.id) }}"
+                                    action="{{ url_for('categories.delete_category', cat_id=c.id) }}"
                                     onsubmit="return confirm('Deseja realmente excluir esta categoria?');">
                                     <button type="submit" class="btn btn-outline-danger btn-sm">
                                         <i class="fa-regular fa-trash-can"></i>
